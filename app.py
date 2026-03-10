@@ -394,6 +394,12 @@ def _change_markers(nav_series: pd.Series, changes_df: pd.DataFrame, color: str,
 
 
 with tab_chart:
+    col_log, col_mkr = st.columns(2)
+    with col_log:
+        use_log = st.checkbox("Logarithmische Skala", value=False)
+    with col_mkr:
+        show_markers = st.checkbox("Wechsel-Marker anzeigen", value=True)
+
     fig = go.Figure()
 
     # Benchmark
@@ -421,10 +427,11 @@ with tab_chart:
             )
         )
 
-        # Holding-change markers
-        marker_trace = _change_markers(nav_series, changes_df, color, label)
-        if marker_trace:
-            fig.add_trace(marker_trace)
+        # Holding-change markers (only when enabled)
+        if show_markers:
+            marker_trace = _change_markers(nav_series, changes_df, color, label)
+            if marker_trace:
+                fig.add_trace(marker_trace)
 
     fig.update_layout(
         title="Portfolio Value (normalisiert auf 1.0 am Start)",
@@ -436,7 +443,10 @@ with tab_chart:
         template="plotly_dark",
         margin=dict(l=40, r=20, t=60, b=40),
     )
-    fig.update_yaxes(tickformat=".2f")
+    if use_log:
+        fig.update_yaxes(type="log", tickformat=".2g")
+    else:
+        fig.update_yaxes(tickformat=".2f")
     st.plotly_chart(fig, use_container_width=True)
 
     # Drawdown chart
@@ -468,10 +478,10 @@ with tab_chart:
                 hovertemplate=f"{label} DD: %{{y:.1f}}%<extra></extra>",
             )
         )
-        # Holding-change markers on drawdown chart too
-        if not changes_df.empty:
+        # Holding-change markers on drawdown chart (same toggle)
+        if show_markers and not changes_df.empty:
             dd_markers = _change_markers(
-                dd * 100,  # drawdown series in %
+                dd * 100,
                 changes_df, color, label,
             )
             if dd_markers:
